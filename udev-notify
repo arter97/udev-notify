@@ -162,6 +162,76 @@ notify_unplugged() {
    fi
 }
 
+sanitize_dev_name() {
+    # Remove redundant strings
+    local dev_name="$1"
+    echo $dev_name | sed \
+        -e "s/ America, / /g" \
+        -e "s/ Co, / /g" \
+        -e "s/ CO., / /g" \
+        -e "s/ Co.Ltd / /g" \
+        -e "s/ Comm. / /g" \
+        -e "s/ Communication / /g" \
+        -e "s/ Computer, / /g" \
+        -e "s/ Computers, / /g" \
+        -e "s/ ELECTRIC / /g" \
+        -e "s/ Electronic, / /g" \
+        -e "s/ Electronics.Co.,Ltd / /g" \
+        -e "s/ GmbH / /g" \
+        -e "s/ Holdings, / /g" \
+        -e "s/ Industrial, / /g" \
+        -e "s/ Industry / /g" \
+        -e "s/ Multimedia, / /g" \
+        -e "s/ Pty, / /g" \
+        -e "s/ Pty., / /g" \
+        -e "s/ Silicon / /g" \
+        -e "s/ Tech, / /g" \
+        -e "s/ Tech. / /g" \
+        -e "s/ Technic / /g" \
+        -e "s/ Technics / /g" \
+        -e "s/ Techno / /g" \
+        -e "s/ Telecommunications / /g" \
+        -e "s/ Telecommunications, / /g" \
+        -e "s/ Telecomunicacoes / /g" \
+        -e "s/ Teletech / /g" \
+        -e "s/ Co. / /g" \
+        -e "s/ Devices / /g" \
+        -e "s/ Enterprises / /g" \
+        -e "s/ Group, / /g" \
+        -e "s/ Industries / /g" \
+        -e "s/ Industries, / /g" \
+        -e "s/ International, / /g" \
+        -e "s/ Manufacturing / /g" \
+        -e "s/ Networks, / /g" \
+        -e "s/ USA, / /g" \
+        -e "s/ Company / /g" \
+        -e "s/ Corp., / /g" \
+        -e "s/ Digital / /g" \
+        -e "s/ System / /g" \
+        -e "s/ Systems / /g" \
+        -e "s/ Systems, / /g" \
+        -e "s/ International / /g" \
+        -e "s/ Ltd, / /g" \
+        -e "s/ Technology, / /g" \
+        -e "s/ Computer / /g" \
+        -e "s/ Tech / /g" \
+        -e "s/ Enterprise / /g" \
+        -e "s/ Information / /g" \
+        -e "s/ Technologies / /g" \
+        -e "s/ Technologies, / /g" \
+        -e "s/ Semiconductor / /g" \
+        -e "s/ Electronics, / /g" \
+        -e "s/ Electronic / /g" \
+        -e "s/ Industrial / /g" \
+        -e "s/ Electric / /g" \
+        -e "s/ Ltd. / /g" \
+        -e "s/ Ltd / /g" \
+        -e "s/ Electronics / /g" \
+        -e "s/ Technology / /g" \
+        -e "s/ Co., / /g" \
+    | tr -s ' '
+}
+
 (
    flock -w 10 200||exit 1
    case "$action" in
@@ -172,6 +242,7 @@ notify_unplugged() {
                 dev_num="$(printf %03d $dev_num)"
                 dev_info="$(lsusb -D "/dev/bus/usb/$bus_num/$dev_num")"
                 dev_name="$(echo "$dev_info"|grep -m1 '^Device:'|cut -d' ' -f4-)"
+                dev_name="$(sanitize_dev_name "$dev_name")"
                 vp_id="$(echo "$dev_info"|grep -m1 '^Device:'|awk '{print$3}')"
                 dev_title="$(echo "<b>Vendor / Product ID:</b> $vp_id###$(echo "$dev_info"|\
                              sed 's/^ *//'|sed '/^[[:space:]]*$/d'|sed 's/[[:blank:]]*$//'|awk '!($2="")'|\
