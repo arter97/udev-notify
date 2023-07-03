@@ -94,6 +94,7 @@ show_visual_notification() {
           dev_icon=""
    fi
    text="$(echo "$text"|sed 's/###/\n/g')"
+   killall notify-osd 2>/dev/null || true
    declare -a logged_users=($(print_logged_users))
    for (( i=0; i<${#logged_users[@]}; i=($i + 1) ))
       do
