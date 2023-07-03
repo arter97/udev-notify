@@ -86,10 +86,10 @@ get_device_icon() {
 show_visual_notification() {
    local header="$1"
    local dev_name="$2"
-   local text="$3"
+   local text="$1###$3"
    if [ "$notification_icons" == "true" ]
       then
-          get_device_icon "$text"
+          get_device_icon "$4"
       else
           dev_icon=""
    fi
@@ -104,7 +104,7 @@ show_visual_notification() {
          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$cur_user_id/bus"
          export DISPLAY="$(who|grep "$cur_user"|grep 'tty' -m1|grep -o '(.*)$'|sed 's/(//;s/)//')"
          export XAUTHORITY="/home/$cur_user/.Xauthority"
-         su "$cur_user" -c "notify-send -i '$dev_icon' -a '$header' '$dev_name' '$text'"
+         su "$cur_user" -c "notify-send -i '$dev_icon' '$dev_name' '$text'"
    done
 }
 
@@ -137,9 +137,11 @@ sound_or_speak() {
 notify_plugged() {
    local dev_title="$1"
    local dev_name="$2"
+   local iProduct="$3"
+   local dev_verbose="$4"
    if [ "$show_notifications" == "true" ]
       then
-          show_visual_notification "Device plugged" "$dev_name" "$dev_title"
+          show_visual_notification "$iProduct plugged in" "$dev_name" "$dev_title" "$dev_verbose"
    fi
 
    if [ "$play_sounds" == "true" ]
@@ -149,11 +151,12 @@ notify_plugged() {
 }
 
 notify_unplugged() {
-   local dev_title="$1"
-   local dev_name="$2"
+   local dev_name="$1"
+   local iProduct="$2"
+   local dev_verbose="$3"
    if [ "$show_notifications" == "true" ]
       then
-          show_visual_notification "Device unplugged" "$dev_name" "$dev_title"
+          show_visual_notification "$iProduct unplugged" "$dev_name" "" "$dev_verbose"
    fi
 
    if [ "$play_sounds" == "true" ]
@@ -244,32 +247,35 @@ sanitize_dev_name() {
                 dev_name="$(echo "$dev_info"|grep -m1 '^Device:'|cut -d' ' -f4-)"
                 dev_name="$(sanitize_dev_name "$dev_name")"
                 vp_id="$(echo "$dev_info"|grep -m1 '^Device:'|awk '{print$3}')"
-                dev_title="$(echo "<b>Vendor / Product ID:</b> $vp_id###$(echo "$dev_info"|\
+                dev_verbose="$(echo "<b>Vendor / Product ID:</b> $vp_id###$(echo "$dev_info"|\
                              sed 's/^ *//'|sed '/^[[:space:]]*$/d'|sed 's/[[:blank:]]*$//'|awk '!($2="")'|\
                              grep -m3 'bInterfaceClass\|bInterfaceSubClass\|bInterfaceProtocol'|awk '!seen[$0]++'|\
                              grep -v '^bInterfaceClass $'|grep -v '^bInterfaceSubClass $'|grep -v '^bInterfaceProtocol $'|\
                              grep -v 'Vendor Specific'|sed 's/bInterface//g'|sed 's/^\s*\([a-zA-Z]\+\):*\s*[0-9]*\s*/<b>\1:<\/b> /'|\
                              awk 1 ORS='###')<b>Bus</b> '$bus_num' <b>Device</b> '$dev_num'")"
-                escaped_dev_path="$(echo "$dev_path"|sed 's/[\/&*.^$]/\\\&/g')"
+                dev_title="USB $(echo "$dev_info" | grep bcdUSB | head -n1 | awk '{print $2}' | cut -c-3)"
+                speed="$(lsusb -tvv | tac | grep -A10 "/dev/bus/usb/$bus_num/$dev_num" | grep -E '[0-9]+M' | head -n1 | tr ' ' '\n' | grep -E '[0-9]+M')"
+                if [ ! -z "$speed" ]; then dev_title="$dev_title ($(echo $speed | sed s/000M/G/g)bps)"; fi
+                iProduct="$(echo "$dev_info" | grep -m1 iProduct | tr -s ' ' | cut -d' ' -f4-)"
                 sed -i "s#^\([0-9]\{3\}:\)\{2\}\($escaped_dev_path\)#$bus_num:$dev_num:$dev_path#" "$devlist_file"
                 existing_dev_on_bus_cnt="$(cat "$devlist_file"|grep "^$bus_num:$dev_num:"|awk 'END {print NR}')"
                 if [ "$existing_dev_on_bus_cnt" == "0" ]
                    then
                        echo "$bus_num:$dev_num:$dev_path title=\"$dev_title\"" >> "$devlist_file"
                        echo "$bus_num:$dev_num:$dev_path name=\"$dev_name\"" >> "$devlist_file"
-                       notify_plugged "$dev_title" "$dev_name"
+                       echo "$bus_num:$dev_num:$dev_path iProduct=\"$iProduct\"" >> "$devlist_file"
+                       echo "$bus_num:$dev_num:$dev_path verbose=\"$dev_verbose\"" >> "$devlist_file"
+                       notify_plugged "$dev_title" "$dev_name" "$iProduct" "$dev_verbose"
                 fi
          fi
          ;;
       remove )
-         dev_title="$(grep "$dev_path " "$devlist_file"|grep 'title="'|sed 's/.*title=\"\(.*\)\".*/\1/g'|tail -1)"
          dev_name="$(grep "$dev_path " "$devlist_file"|grep 'name="'|sed 's/.*name=\"\(.*\)\".*/\1/g'|tail -1)"
+         iProduct="$(grep "$dev_path " "$devlist_file"|grep 'iProduct="'|sed 's/.*iProduct=\"\(.*\)\".*/\1/g'|tail -1)"
+         dev_verbose="$(grep "$dev_path " "$devlist_file"|grep 'verbose="'|sed 's/.*verbose=\"\(.*\)\".*/\1/g'|tail -1)"
          grep -v "$dev_path " "$devlist_file" > "$devlist_file"_tmp
          mv "$devlist_file"_tmp "$devlist_file"
-         if [ "$dev_title" != "" ]
-            then
-                notify_unplugged "$dev_title" "$dev_name"
-         fi
+         notify_unplugged "$dev_name" "$iProduct" "$dev_verbose"
          ;;
    esac
 ) 200>"$lock_file"
