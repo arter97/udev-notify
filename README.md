@@ -20,7 +20,7 @@ bash
 ## To get started:
 * **Download the latest revision**
 ```
-git clone https://github.com/VHSgunzo/udev-notify.git
+git clone https://github.com/arter97/udev-notify.git
 ```
 * **Switch to tool's directory**
 ```
@@ -30,8 +30,3 @@ cd udev-notify
 ```
 make install
 ```
-* **Or install udev-notify using your favorite AUR package manager**
-```
-yay --needed --noconfirm -S base-devel udev-notify-git
-```
-* **[Or install DEB package](https://github.com/VHSgunzo/udev-notify/releases)**
