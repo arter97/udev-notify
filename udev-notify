@@ -258,15 +258,11 @@ sanitize_dev_name() {
                 if [ ! -z "$speed" ]; then dev_title="$dev_title ($(echo $speed | sed s/000M/G/g)bps)"; fi
                 iProduct="$(echo "$dev_info" | grep -m1 iProduct | tr -s ' ' | cut -d' ' -f4-)"
                 sed -i "s#^\([0-9]\{3\}:\)\{2\}\($escaped_dev_path\)#$bus_num:$dev_num:$dev_path#" "$devlist_file"
-                existing_dev_on_bus_cnt="$(cat "$devlist_file"|grep "^$bus_num:$dev_num:"|awk 'END {print NR}')"
-                if [ "$existing_dev_on_bus_cnt" == "0" ]
-                   then
-                       echo "$bus_num:$dev_num:$dev_path title=\"$dev_title\"" >> "$devlist_file"
-                       echo "$bus_num:$dev_num:$dev_path name=\"$dev_name\"" >> "$devlist_file"
-                       echo "$bus_num:$dev_num:$dev_path iProduct=\"$iProduct\"" >> "$devlist_file"
-                       echo "$bus_num:$dev_num:$dev_path verbose=\"$dev_verbose\"" >> "$devlist_file"
-                       notify_plugged "$dev_title" "$dev_name" "$iProduct" "$dev_verbose"
-                fi
+                echo "$bus_num:$dev_num:$dev_path title=\"$dev_title\"" >> "$devlist_file"
+                echo "$bus_num:$dev_num:$dev_path name=\"$dev_name\"" >> "$devlist_file"
+                echo "$bus_num:$dev_num:$dev_path iProduct=\"$iProduct\"" >> "$devlist_file"
+                echo "$bus_num:$dev_num:$dev_path verbose=\"$dev_verbose\"" >> "$devlist_file"
+                notify_plugged "$dev_title" "$dev_name" "$iProduct" "$dev_verbose"
          fi
          ;;
       remove )
