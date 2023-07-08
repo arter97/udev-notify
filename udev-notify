@@ -232,6 +232,12 @@ sanitize_dev_name() {
         -e "s/ Electronics / /g" \
         -e "s/ Technology / /g" \
         -e "s/ Co., / /g" \
+        -e "s/ Inc., / /g" \
+        -e "s/ Inc. / /g" \
+        -e "s/ Inc / /g" \
+        -e "s/ Corporation / /g" \
+        -e "s/ Corp., / /g" \
+        -e "s/ Corp. / /g" \
     | tr -s ' '
 }
 
